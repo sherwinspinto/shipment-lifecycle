@@ -1,3 +1,6 @@
 package me.sspjavalabs.shipmentlifecycle.statemachine.engine.model;
 
-public record TrackingEvent(String shipmentId, String eventId, EventType eventType) {}
+import java.time.Instant;
+
+public record TrackingEvent(
+    String shipmentId, String eventId, EventType eventType, Instant occurredAt) {}

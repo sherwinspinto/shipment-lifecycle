@@ -4,6 +4,4 @@ import java.util.List;
 import java.util.Optional;
 
 public record FoldResult(
-    ShipmentState finalState,
-    List<AppliedResult> appliedResults,
-    Optional<AppliedResult.Rejected> rejectedOn) {}
+    ShipmentState finalState, List<FoldEntry> appliedResults, Optional<FoldEntry> rejectedOn) {}

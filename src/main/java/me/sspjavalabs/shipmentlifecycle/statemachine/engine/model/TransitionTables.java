@@ -15,8 +15,7 @@ public class TransitionTables {
               new TransitionEdge(ShipmentState.CREATED, EventType.IN_TRANSIT),
               new AppliedResult.Applied(ShipmentState.IN_TRANSIT)),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.CREATED, EventType.OUT_FOR_DELIVERY),
+              new TransitionEdge(ShipmentState.CREATED, EventType.OUT_FOR_DELIVERY),
               new AppliedResult.Applied(ShipmentState.OUT_FOR_DELIVERY)),
           Map.entry(
               new TransitionEdge(ShipmentState.CREATED, EventType.DELIVERED),
@@ -34,8 +33,7 @@ public class TransitionTables {
               new TransitionEdge(ShipmentState.IN_TRANSIT, EventType.IN_TRANSIT),
               new AppliedResult.Ignored()),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.IN_TRANSIT, EventType.OUT_FOR_DELIVERY),
+              new TransitionEdge(ShipmentState.IN_TRANSIT, EventType.OUT_FOR_DELIVERY),
               new AppliedResult.Applied(ShipmentState.OUT_FOR_DELIVERY)),
           Map.entry(
               new TransitionEdge(ShipmentState.IN_TRANSIT, EventType.DELIVERED),
@@ -47,24 +45,19 @@ public class TransitionTables {
               new TransitionEdge(ShipmentState.IN_TRANSIT, EventType.CANCELLED),
               new AppliedResult.Applied(ShipmentState.CANCELLED)),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.OUT_FOR_DELIVERY, EventType.OUT_FOR_DELIVERY),
+              new TransitionEdge(ShipmentState.OUT_FOR_DELIVERY, EventType.OUT_FOR_DELIVERY),
               new AppliedResult.Ignored()),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.OUT_FOR_DELIVERY, EventType.IN_TRANSIT),
+              new TransitionEdge(ShipmentState.OUT_FOR_DELIVERY, EventType.IN_TRANSIT),
               new AppliedResult.Ignored()),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.OUT_FOR_DELIVERY, EventType.DELIVERED),
+              new TransitionEdge(ShipmentState.OUT_FOR_DELIVERY, EventType.DELIVERED),
               new AppliedResult.Applied(ShipmentState.DELIVERED)),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.OUT_FOR_DELIVERY, EventType.EXCEPTION),
+              new TransitionEdge(ShipmentState.OUT_FOR_DELIVERY, EventType.EXCEPTION),
               new AppliedResult.Applied(ShipmentState.EXCEPTION)),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.OUT_FOR_DELIVERY, EventType.CANCELLED),
+              new TransitionEdge(ShipmentState.OUT_FOR_DELIVERY, EventType.CANCELLED),
               new AppliedResult.Applied(ShipmentState.CANCELLED)),
           Map.entry(
               new TransitionEdge(ShipmentState.DELIVERED, EventType.DELIVERED),
@@ -79,8 +72,7 @@ public class TransitionTables {
               new TransitionEdge(ShipmentState.EXCEPTION, EventType.IN_TRANSIT),
               new AppliedResult.Applied(ShipmentState.IN_TRANSIT)),
           Map.entry(
-              new TransitionEdge(
-                  ShipmentState.EXCEPTION, EventType.OUT_FOR_DELIVERY),
+              new TransitionEdge(ShipmentState.EXCEPTION, EventType.OUT_FOR_DELIVERY),
               new AppliedResult.Applied(ShipmentState.OUT_FOR_DELIVERY)),
           Map.entry(
               new TransitionEdge(ShipmentState.EXCEPTION, EventType.DELIVERED),
