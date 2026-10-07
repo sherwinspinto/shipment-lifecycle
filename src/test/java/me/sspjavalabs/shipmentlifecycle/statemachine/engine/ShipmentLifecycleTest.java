@@ -364,7 +364,7 @@ class ShipmentLifecycleTest {
             new Tuple<>(DELIVERED, baseInstant.plus(5, ChronoUnit.HOURS)));
 
     Timeline timeline =
-      shipmentLifecycle.summarize(executeFoldTestForSummarize(eventTypesAndInstants));
+        shipmentLifecycle.summarize(executeFoldTestForSummarize(eventTypesAndInstants));
 
     assertEquals(ShipmentState.CANCELLED, timeline.finalState());
 
@@ -377,6 +377,9 @@ class ShipmentLifecycleTest {
         case AppliedResult.Rejected(String reason) -> {
           assertEquals("cancelled", reason);
           assertEquals(DELIVERED, timeline.rejectedOn().get().trackingEvent().eventType());
+          assertEquals(
+              baseInstant.plus(5, ChronoUnit.HOURS),
+              timeline.rejectedOn().get().trackingEvent().occurredAt());
         }
         case AppliedResult.Applied _, AppliedResult.Ignored _ -> fail("Expected Rejected");
       }
