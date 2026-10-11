@@ -3,23 +3,47 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
-    <!-- Project Metadata -->
-    <groupId>com.sspjavalab</groupId>
-    <artifactId>shipment-lifecycle</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>shipment-lifecycle</name>
-    <description>shipment lifecycle shipmentState machine</description>
+  <modelVersion>4.0.0</modelVersion>
+  <!-- Project Metadata -->
+  <groupId>com.sspjavalab</groupId>
+  <artifactId>shipment-lifecycle</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>shipment-lifecycle</name>
+  <description>shipment lifecycle shipmentState machine</description>
 
-    <properties>
-        <java.version>25</java.version>
-    </properties>
+  <properties>
+    <java.version>25</java.version>
+  </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>6.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.12</version> <!-- Use the current stable version -->
+    </dependency>
+
+    <!-- Test Related Dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <version>6.0.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>6.0.2</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>1.21.4</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -28,10 +52,44 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.14.1</version>
         <configuration>
           <source>25</source>
           <target>25</target>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <!-- Check for the latest version on Maven Central -->
+        <version>3.10.3</version>
+        <configuration>
+          <java>
+            <!-- Apply google-java-format -->
+<!--            <googleJavaFormat/>-->
+            <googleJavaFormat>
+              <!-- Optional: Defaults to 1.28.0+ depending on your JVM -->
+              <version>1.36.0</version>
+              <!-- Optional: STYLE can be 'GOOGLE' (default, 2-space indentation) or 'AOSP' (4-space indentation) -->
+              <style>GOOGLE</style>
+            </googleJavaFormat>
+
+            <!-- Clean up imports automatically -->
+            <removeUnusedImports>
+              <engine>cleanthat-javaparser-unnecessaryimport</engine>
+            </removeUnusedImports>
+            <importOrder/>
+          </java>
+        </configuration>
+        <executions>
+          <execution>
+            <!-- Binds checking to the verify phase so builds fail on poorly formatted code -->
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <phase>verify</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
