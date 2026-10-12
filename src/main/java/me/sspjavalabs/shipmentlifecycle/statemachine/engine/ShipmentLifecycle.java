@@ -13,18 +13,17 @@ import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.*;
  * type, from Applied(state), Ignored(), Rejected(reason)
  */
 public class ShipmentLifecycle {
-
   public AppliedResult apply(ShipmentState currentShipmentState, TrackingEvent trackingEvent) {
     TransitionEdge transitionEdge =
         new TransitionEdge(currentShipmentState, trackingEvent.eventType());
     AppliedResult appliedResult = TransitionTables.TRANSITION_TABLE.get(transitionEdge);
     if (appliedResult != null) return appliedResult;
     if (currentShipmentState == ShipmentState.DELIVERED)
-      return new AppliedResult.Rejected("after_delivered");
+      return new AppliedResult.Rejected(AppliedResult.Rejected.REASON_AFTER_DELIVERED);
     if (currentShipmentState == ShipmentState.CANCELLED)
-      return new AppliedResult.Rejected("cancelled");
+      return new AppliedResult.Rejected(AppliedResult.Rejected.REASON_CANCELLED);
 
-    return new AppliedResult.Rejected("no transition");
+    return new AppliedResult.Rejected(AppliedResult.Rejected.REASON_NO_TRANSITION);
   }
 
   public FoldResult fold(List<TrackingEvent> trackingEvents) {
@@ -39,7 +38,10 @@ public class ShipmentLifecycle {
         return new FoldResult(
             currentShipmentState,
             appliedResults,
-            Optional.of(FoldEntry.of(new AppliedResult.Rejected("missing_time"), trackingEvent)));
+            Optional.of(
+                FoldEntry.of(
+                    new AppliedResult.Rejected(AppliedResult.Rejected.REASON_MISSING_TIME),
+                    trackingEvent)));
 
       AppliedResult appliedResult = apply(currentShipmentState, trackingEvent);
       if (appliedResult instanceof AppliedResult.Applied(ShipmentState newShipmentState)) {

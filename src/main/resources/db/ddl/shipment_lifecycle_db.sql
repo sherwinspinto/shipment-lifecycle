@@ -1,0 +1,1 @@
+CREATE DATABASE shipment_lifecycle

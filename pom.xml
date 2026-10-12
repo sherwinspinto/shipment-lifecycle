@@ -76,7 +76,7 @@
 
             <!-- Clean up imports automatically -->
             <removeUnusedImports>
-              <engine>cleanthat-javaparser-unnecessaryimport</engine>
+              <engine>google-java-format</engine>
             </removeUnusedImports>
             <importOrder/>
           </java>
