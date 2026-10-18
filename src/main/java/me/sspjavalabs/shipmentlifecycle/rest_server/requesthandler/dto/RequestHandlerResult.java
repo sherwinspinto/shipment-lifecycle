@@ -3,15 +3,21 @@ package me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto;
 import me.sspjavalabs.shipmentlifecycle.rest_server.RestServerFailure;
 
 public sealed interface RequestHandlerResult {
-  record Success(ResponseDto responseDto) implements RequestHandlerResult {}
-
-  record Failure(RestServerFailure restServerFailure) implements RequestHandlerResult {}
-
-  static Success ofSuccess(ResponseDto responseDto) {
-    return new Success(responseDto);
+  record Ok(String responseBody) implements RequestHandlerResult {
+    public static Ok ok(String responseBody) {
+      return new Ok(responseBody);
+    }
   }
 
-  static Failure ofFailure(RestServerFailure restServerFailure) {
-    return new Failure(restServerFailure);
+  record Created(String responseBody, String location) implements RequestHandlerResult {
+    public static Created created(String responseBody, String location) {
+      return new Created(responseBody, location);
+    }
+  }
+
+  record Failure(RestServerFailure restServerFailure) implements RequestHandlerResult {
+    public static Failure failure(RestServerFailure restServerFailure) {
+      return new Failure(restServerFailure);
+    }
   }
 }

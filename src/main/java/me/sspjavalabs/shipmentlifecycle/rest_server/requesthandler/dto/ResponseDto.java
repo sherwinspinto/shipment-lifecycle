@@ -1,12 +1,11 @@
 package me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto;
 
 import java.util.List;
-import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.AppliedResult;
-import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.FoldEntry;
-import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.Timeline;
-import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.TrackingEvent;
+import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.*;
 
-public sealed interface ResponseDto {
+public interface ResponseDto {
+  record ValidationError(String error) {}
+
   record Events(
       String finalState,
       String firstDeliveredAt,
@@ -53,4 +52,6 @@ public sealed interface ResponseDto {
       };
     }
   }
+
+  record CreateEventView(String result, String eventId) implements ResponseDto {}
 }

@@ -37,6 +37,20 @@ public class RestClient implements AutoCloseable {
     return httpClient.send(request, bodyHandler);
   }
 
+  public HttpResponse<String> post(Map<String, String> headers, String requestBody, String endPoint)
+      throws IOException, InterruptedException {
+    HttpRequest.Builder builder =
+        HttpRequest.newBuilder()
+            .uri(URI.create(endPoint))
+            .POST(HttpRequest.BodyPublishers.ofString(requestBody));
+    if (!headers.isEmpty()) builder.headers(getHeadersArrayFromMap(headers));
+    HttpRequest request = builder.build();
+
+    HttpResponse.BodyHandler<String> bodyHandler =
+        responseInfo -> HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8);
+    return httpClient.send(request, bodyHandler);
+  }
+
   @Override
   public void close() throws Exception {
     httpClient.close();

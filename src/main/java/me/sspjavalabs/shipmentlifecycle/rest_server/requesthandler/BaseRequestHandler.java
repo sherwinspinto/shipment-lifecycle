@@ -1,24 +1,21 @@
 package me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler;
 
+import static me.sspjavalabs.shipmentlifecycle.rest_server.RestServerFailure.*;
+import static me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.RequestHandlerResult.*;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import me.sspjavalabs.shipmentlifecycle.infra.JsonSerDer;
 import me.sspjavalabs.shipmentlifecycle.rest_server.RestServerFailure;
 import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.RequestHandlerResult;
-import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.ResponseDto;
 
 public class BaseRequestHandler implements HttpHandler {
   private final RequestHandler requestHandler;
 
-  private final JsonSerDer jsonSerDer;
-
-  public BaseRequestHandler(RequestHandler requestHandler, JsonSerDer jsonSerDer) {
+  public BaseRequestHandler(RequestHandler requestHandler) {
     this.requestHandler = requestHandler;
-    this.jsonSerDer = jsonSerDer;
   }
 
   @Override
@@ -28,29 +25,44 @@ public class BaseRequestHandler implements HttpHandler {
           switch (requestHandler) {
             case ShipmentsRequestHandler shipmentsRequestHandler ->
                 shipmentsRequestHandler.handleRequest(
-                    exchange.getRequestMethod(), exchange.getRequestURI().getRawPath());
+                    exchange.getRequestMethod(),
+                    exchange.getRequestURI().getRawPath(),
+                    handleRequestBodyStream(exchange.getRequestBody()));
           };
 
       switch (handlerResult) {
-        case RequestHandlerResult.Success(ResponseDto responseDto) ->
-            sendSuccess(exchange, responseDto);
-        case RequestHandlerResult.Failure(
-                RestServerFailure.MethodNotSupportedFailure(
-                    String method,
-                    String resourceUrl,
-                    List<String> allowedMethods)) ->
-            sendNotSupportedMethod(exchange, allowedMethods);
-        case RequestHandlerResult.Failure(
-                RestServerFailure.UnmatchedPathFailure(String method, String url)) ->
-            sendBadRequest(
-                url,
-                method,
-                "{ \"error\": \"The requested resource path was not found\"}",
-                exchange);
+        case Ok(String responseBody) -> sendOk(exchange, responseBody);
+        case Created(String responseBody, String location) ->
+            sendCreated(exchange, responseBody, location);
+        case Failure(RestServerFailure restServerFailure) ->
+            sendFailure(exchange, restServerFailure);
       }
     } catch (Exception exception) {
       sendInternalServerError(exchange);
     }
+  }
+
+  void sendFailure(HttpExchange exchange, RestServerFailure restServerFailure) throws IOException {
+    switch (restServerFailure) {
+      case MethodNotSupportedFailure(List<String> allowedMethods) ->
+          sendMethodNotSupported(exchange, allowedMethods);
+      case UnmatchedPathFailure unmatchedPathFailure ->
+          sendResourceNotFound(exchange, unmatchedPathFailure.responseBody());
+      case BadRequestBody badRequestBody -> sendBadRequest(exchange, badRequestBody.responseBody());
+      case InternalServerError() -> sendInternalServerError(exchange);
+    }
+  }
+
+  void sendOk(HttpExchange exchange, String responseBody) throws IOException {
+    exchange.sendResponseHeaders(200, responseBody.length());
+    writeToOutputStream(exchange, responseBody);
+  }
+
+  void sendCreated(HttpExchange exchange, String responseBody, String createdResourceUrl)
+      throws IOException {
+    exchange.getResponseHeaders().add("Location", createdResourceUrl);
+    exchange.sendResponseHeaders(201, responseBody.length());
+    writeToOutputStream(exchange, responseBody);
   }
 
   void sendInternalServerError(HttpExchange exchange) throws IOException {
@@ -58,11 +70,21 @@ public class BaseRequestHandler implements HttpHandler {
     writeToOutputStream(exchange, null);
   }
 
-  void sendNotSupportedMethod(HttpExchange exchange, List<String> allowedMethods)
+  void sendMethodNotSupported(HttpExchange exchange, List<String> allowedMethods)
       throws IOException {
     exchange.getResponseHeaders().add("Allow", String.join(",", allowedMethods));
     exchange.sendResponseHeaders(405, -1);
     writeToOutputStream(exchange, null);
+  }
+
+  void sendResourceNotFound(HttpExchange exchange, String failureMessage) throws IOException {
+    exchange.sendResponseHeaders(404, failureMessage.length());
+    writeToOutputStream(exchange, failureMessage);
+  }
+
+  void sendBadRequest(HttpExchange exchange, String failureMessage) throws IOException {
+    exchange.sendResponseHeaders(400, failureMessage.length());
+    writeToOutputStream(exchange, failureMessage);
   }
 
   void writeToOutputStream(HttpExchange exchange, String body) throws IOException {
@@ -71,15 +93,8 @@ public class BaseRequestHandler implements HttpHandler {
     }
   }
 
-  void sendSuccess(HttpExchange exchange, ResponseDto responseDto) throws IOException {
-    String response = jsonSerDer.toJsonString(responseDto);
-    exchange.sendResponseHeaders(200, response.length());
-    writeToOutputStream(exchange, response);
-  }
-
-  void sendBadRequest(String path, String method, String failureMessage, HttpExchange exchange)
-      throws IOException {
-    exchange.sendResponseHeaders(404, failureMessage.length());
-    writeToOutputStream(exchange, failureMessage);
+  String handleRequestBodyStream(InputStream requestBodyInputStream) throws IOException {
+    if (requestBodyInputStream == null) return "";
+    return new String(requestBodyInputStream.readAllBytes());
   }
 }

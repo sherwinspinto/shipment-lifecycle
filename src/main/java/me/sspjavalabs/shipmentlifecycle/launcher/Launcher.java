@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.util.Map;
 import me.sspjavalabs.shipmentlifecycle.authentication.BearerTokenResolver;
+import me.sspjavalabs.shipmentlifecycle.db.adapter.AppendPortAdaptor;
 import me.sspjavalabs.shipmentlifecycle.db.adapter.LoadPortAdapter;
 import me.sspjavalabs.shipmentlifecycle.db.infra.BasicPgDataSource;
 import me.sspjavalabs.shipmentlifecycle.infra.GsonSerDer;
@@ -16,6 +17,7 @@ import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.BaseRequestHa
 import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.ShipmentsRequestHandler;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.EventLog;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.ShipmentLifecycle;
+import me.sspjavalabs.shipmentlifecycle.statemachine.engine.outgoing.port.AppendPort;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.outgoing.port.LoadPort;
 
 public class Launcher {
@@ -57,10 +59,11 @@ public class Launcher {
 
     ShipmentLifecycle shipmentLifecycle = new ShipmentLifecycle();
     LoadPort loadPort = new LoadPortAdapter(basicPgDataSource);
+    AppendPort appendPort = new AppendPortAdaptor(basicPgDataSource);
     EventLog eventLog = new EventLog(loadPort, shipmentLifecycle);
-    ShipmentsRequestHandler shipmentsRequestHandler = new ShipmentsRequestHandler(eventLog);
-    BaseRequestHandler baseRequestHandler =
-        new BaseRequestHandler(shipmentsRequestHandler, jsonSerDer);
+    ShipmentsRequestHandler shipmentsRequestHandler =
+        new ShipmentsRequestHandler(eventLog, appendPort, jsonSerDer);
+    BaseRequestHandler baseRequestHandler = new BaseRequestHandler(shipmentsRequestHandler);
 
     restServer =
         RestServer.initialise(

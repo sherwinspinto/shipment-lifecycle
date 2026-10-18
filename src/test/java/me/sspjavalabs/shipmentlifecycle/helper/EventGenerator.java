@@ -20,7 +20,7 @@ public class EventGenerator {
   private static final String NEW_LINE = System.lineSeparator();
   private static final String EMPTY_STRING = "";
   private static final Pattern RETRIEVE_TIME_OFFSET = Pattern.compile("@T\\((NULL|\\d+)\\)");
-  private static final Instant baseInstant = Instant.parse("2026-08-06T18:00:00Z");
+  public static final Instant baseInstant = Instant.parse("2026-08-06T18:00:00Z");
 
   public static List<TrackingEvent> listOfTrackingEventsFromCsvString(String multilineCsv) {
     return Arrays.stream(multilineCsv.split(NEW_LINE))

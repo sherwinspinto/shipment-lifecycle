@@ -35,7 +35,9 @@ import org.junit.jupiter.params.aggregator.AggregateWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
 @ExtendWith(GlobalPostgresExtension.class)
-class ShipmentsRequestHandlerTest {
+class GetTimelineTest {
+  private static final String END_POINT =
+      "http://localhost:8080/shipments/{carrier}/{shipmentId}/events";
   private static RestServer restServer;
   private static RestClient restClient;
   private static AppendPort appendPort;
@@ -67,8 +69,9 @@ class ShipmentsRequestHandlerTest {
                 ShipmentsRequestHandler.ROOT_RESOURCE_URL,
                 new BaseRequestHandler(
                     new ShipmentsRequestHandler(
-                        new EventLog(new LoadPortAdapter(dataSource), new ShipmentLifecycle())),
-                    jsonSerDer)));
+                        new EventLog(new LoadPortAdapter(dataSource), new ShipmentLifecycle()),
+                        appendPort,
+                        jsonSerDer))));
     restServer.start();
   }
 
@@ -171,14 +174,9 @@ eventId=srhte2,shipmentId=srhts2,eventType=IN_TRANSIT,occurredAt=BASE_INSTANT + 
 
   private static HttpResponse<String> getStringHttpResponse(String carrier, String shipmentId)
       throws IOException, InterruptedException {
-    HttpResponse<String> response =
-        restClient.get(
-            Map.of("Authorization", "Bearer 12345"),
-            "http://localhost:8080"
-                + ShipmentsRequestHandler.TIMELINE_GET_URL
-                    .replace("{carrier}", carrier)
-                    .replace("{shipmentId}", shipmentId));
-    return response;
+    return restClient.get(
+        Map.of("Authorization", "Bearer 12345"),
+        END_POINT.replace("{carrier}", carrier).replace("{shipmentId}", shipmentId));
   }
 
   @AfterAll

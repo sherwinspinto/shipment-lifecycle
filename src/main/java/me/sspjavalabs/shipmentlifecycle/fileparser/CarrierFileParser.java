@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.EventType;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.TrackingEvent;
 
@@ -68,7 +67,7 @@ public class CarrierFileParser {
       Instant occurredAt;
       if (occurredAtString.isBlank()) occurredAt = null;
       else {
-        Optional<Instant> occurredAtOpt = tryParse(Instant::parse, occurredAtString);
+        Optional<Instant> occurredAtOpt = TrackingEvent.tryParseOccurredAt(occurredAtString);
         occurredAt = occurredAtOpt.orElse(null);
         if (occurredAt == null) {
           badRows.add(new BadRow(i + 1, lines[i], "Unparseable occurredAt"));
@@ -80,13 +79,5 @@ public class CarrierFileParser {
           new ParsedEvent(carrier, TrackingEvent.of(shipmentId, eventId, eventType, occurredAt)));
     }
     return new ParsedResults(parsedEvents, badRows);
-  }
-
-  <I, O> Optional<O> tryParse(Function<I, O> parseFunc, I input) {
-    try {
-      return Optional.of(parseFunc.apply(input));
-    } catch (Exception e) {
-      return Optional.empty();
-    }
   }
 }
