@@ -50,6 +50,12 @@ public class BaseRequestHandler implements HttpHandler {
           sendResourceNotFound(exchange, unmatchedPathFailure.responseBody());
       case BadRequestBody badRequestBody -> sendBadRequest(exchange, badRequestBody.responseBody());
       case InternalServerError() -> sendInternalServerError(exchange);
+      case TooManyRequests tooManyRequests -> {
+        String responseBody = tooManyRequests.responseBody();
+        exchange.getResponseHeaders().add("Retry-After", (tooManyRequests.retryInSeconds() + ""));
+        exchange.sendResponseHeaders(tooManyRequests.statusCode(), responseBody.length());
+        writeToOutputStream(exchange, responseBody);
+      }
     }
   }
 
@@ -87,13 +93,13 @@ public class BaseRequestHandler implements HttpHandler {
     writeToOutputStream(exchange, failureMessage);
   }
 
-  void writeToOutputStream(HttpExchange exchange, String body) throws IOException {
+  private void writeToOutputStream(HttpExchange exchange, String body) throws IOException {
     try (OutputStream outputStream = exchange.getResponseBody()) {
       if (body != null) outputStream.write(body.getBytes(StandardCharsets.UTF_8));
     }
   }
 
-  String handleRequestBodyStream(InputStream requestBodyInputStream) throws IOException {
+  private String handleRequestBodyStream(InputStream requestBodyInputStream) throws IOException {
     if (requestBodyInputStream == null) return "";
     return new String(requestBodyInputStream.readAllBytes());
   }

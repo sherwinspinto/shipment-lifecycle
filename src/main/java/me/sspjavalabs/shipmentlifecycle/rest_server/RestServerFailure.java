@@ -35,4 +35,16 @@ public sealed interface RestServerFailure {
       return 500;
     }
   }
+
+  record TooManyRequests(long retryInSeconds) implements RestServerFailure {
+    private static final String error = "{ \"error\" : \"retry in {retrySeconds} second(s)\"}";
+
+    public int statusCode() {
+      return 429;
+    }
+
+    public String responseBody() {
+      return error.replace("{retrySeconds}", (retryInSeconds + ""));
+    }
+  }
 }

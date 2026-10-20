@@ -1,6 +1,7 @@
 package me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler;
 
 import static me.sspjavalabs.shipmentlifecycle.rest_server.RestServerFailure.*;
+import static me.sspjavalabs.shipmentlifecycle.rest_server.rate_limiter.FixedWindowLimiter.LimiterEntry.*;
 import static me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.RequestDto.*;
 import static me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.RequestHandlerResult.*;
 import static me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.RequestHandlerResult.Created;
@@ -8,11 +9,14 @@ import static me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.Re
 import static me.sspjavalabs.shipmentlifecycle.statemachine.engine.outgoing.port.AppendResult.*;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import me.sspjavalabs.shipmentlifecycle.infra.JsonSerDer;
 import me.sspjavalabs.shipmentlifecycle.rest_server.RestServerFailure.UnmatchedPathFailure;
+import me.sspjavalabs.shipmentlifecycle.rest_server.rate_limiter.FixedWindowLimiter;
 import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.RequestHandlerResult;
 import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.dto.RequestHandlerResult.Failure;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.EventLog;
@@ -32,11 +36,20 @@ public final class ShipmentsRequestHandler implements RequestHandler {
   private final EventLog eventLog;
   private final AppendPort appendPort;
   private final JsonSerDer jsonSerDer;
+  private final FixedWindowLimiter fixedWindowLimiter;
+  private final Clock clock;
 
-  public ShipmentsRequestHandler(EventLog eventLog, AppendPort appendPort, JsonSerDer jsonSerDer) {
+  public ShipmentsRequestHandler(
+      EventLog eventLog,
+      AppendPort appendPort,
+      JsonSerDer jsonSerDer,
+      FixedWindowLimiter fixedWindowLimiter,
+      Clock clock) {
     this.eventLog = eventLog;
     this.appendPort = appendPort;
     this.jsonSerDer = jsonSerDer;
+    this.fixedWindowLimiter = fixedWindowLimiter;
+    this.clock = clock;
   }
 
   public RequestHandlerResult handleRequest(
@@ -82,6 +95,10 @@ public final class ShipmentsRequestHandler implements RequestHandler {
         return RequestHandlerResult.Failure.failure(
             new BadRequestBody(
                 jsonSerDer.toJsonString(new ValidationError("Unparseable occurred_at"))));
+
+      Instant now = Instant.now(clock);
+      if (fixedWindowLimiter.allow(carrier, now) instanceof Block block)
+        return new Failure(new TooManyRequests(fixedWindowLimiter.getRetry(block, now)));
 
       TrackingEvent trackingEvent = requestDto.toDomain(shipmentId);
 

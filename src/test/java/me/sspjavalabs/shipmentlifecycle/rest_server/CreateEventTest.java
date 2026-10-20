@@ -9,8 +9,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import me.sspjavalabs.shipmentlifecycle.authentication.BearerTokenResolver;
 import me.sspjavalabs.shipmentlifecycle.db.adapter.AppendPortAdaptor;
 import me.sspjavalabs.shipmentlifecycle.db.adapter.LoadPortAdapter;
@@ -21,6 +25,7 @@ import me.sspjavalabs.shipmentlifecycle.helper.RestClient;
 import me.sspjavalabs.shipmentlifecycle.infra.GsonSerDer;
 import me.sspjavalabs.shipmentlifecycle.infra.JsonSerDer;
 import me.sspjavalabs.shipmentlifecycle.rest_server.authentication.BearerTokenAuthenticator;
+import me.sspjavalabs.shipmentlifecycle.rest_server.rate_limiter.FixedWindowLimiter;
 import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.BaseRequestHandler;
 import me.sspjavalabs.shipmentlifecycle.rest_server.requesthandler.ShipmentsRequestHandler;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.EventLog;
@@ -72,7 +77,12 @@ public class CreateEventTest {
                 ShipmentsRequestHandler.ROOT_RESOURCE_URL,
                 new BaseRequestHandler(
                     new ShipmentsRequestHandler(
-                        new EventLog(loadPort, new ShipmentLifecycle()), appendPort, jsonSerDer))));
+                        new EventLog(loadPort, new ShipmentLifecycle()),
+                        appendPort,
+                        jsonSerDer,
+                        new FixedWindowLimiter(
+                            new ConcurrentHashMap<>(), 10, Duration.of(60, ChronoUnit.SECONDS)),
+                        Clock.systemUTC()))));
     restServer.start();
   }
 
