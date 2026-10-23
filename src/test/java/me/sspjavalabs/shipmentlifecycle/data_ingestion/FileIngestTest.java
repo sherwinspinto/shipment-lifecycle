@@ -1,13 +1,13 @@
 package me.sspjavalabs.shipmentlifecycle.data_ingestion;
 
 import static me.sspjavalabs.shipmentlifecycle.data_ingestion.FileIngest.*;
-import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileParser.*;
 import static me.sspjavalabs.shipmentlifecycle.statemachine.engine.outgoing.port.AppendResult.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileParser;
+import me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.model.TrackingEvent;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.outgoing.port.AppendPort;
 import me.sspjavalabs.shipmentlifecycle.statemachine.engine.outgoing.port.LoadPort;
@@ -97,8 +97,9 @@ fedex,fis1,fie1,DELIVERED,2026-08-06T18:00:00Z
       """)
   void test_2(String fileLines) {
     IngestReport actualIngestReport = fileIngest.ingest(fileLines);
-    BadRow expectedBadRow =
-        new BadRow(2, "fedex,fis2,fie1,DELIVERED,2026-08-06 18:00:00", "Unparseable occurredAt");
+    CarrierFileRowMapper.Row.BadRow expectedBadRow =
+        new CarrierFileRowMapper.Row.BadRow(
+            2, "fedex,fis2,fie1,DELIVERED,2026-08-06 18:00:00", "Unparseable occurredAt");
     IngestReport expectedIngestReport = new IngestReport(List.of(), List.of(expectedBadRow));
     assertEquals(expectedIngestReport, actualIngestReport);
   }
@@ -147,8 +148,9 @@ fedex,fis1,fie1,DELIVERED,2026-08-06T18:00:00Z
     Appended expectedAppendedInserted2 =
         new Appended(expectedCarrier, expectedShipmentId, "fie3", new Inserted("fie3"));
 
-    BadRow expectedBadRow =
-        new BadRow(3, "fedex,fis4,fie2,BAD,2026-08-06T18:30:00Z", "Invalid eventType: BAD");
+    CarrierFileRowMapper.Row.BadRow expectedBadRow =
+        new CarrierFileRowMapper.Row.BadRow(
+            3, "fedex,fis4,fie2,BAD,2026-08-06T18:30:00Z", "Invalid eventType: BAD");
     IngestReport expectedIngestReport =
         new IngestReport(
             List.of(expectedAppendedInserted1, expectedAppendedInserted2), List.of(expectedBadRow));

@@ -38,8 +38,9 @@ class CarrierFileParserTest {
     ParsedResults parsedResults = carrierFileParser.parse(csvString);
     TrackingEvent expectedEvent =
         TrackingEvent.of("1Z999", "e1", EventType.DELIVERED, Instant.parse("2026-08-06T18:00:00Z"));
-    ParsedEvent parsedEvent = new ParsedEvent("fedex", expectedEvent);
-    List<ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent);
+    List<CarrierFileRowMapper.Row.ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
     assertEquals(new ParsedResults(expectedParsedEvents, List.of()), parsedResults);
   }
 
@@ -55,8 +56,9 @@ class CarrierFileParserTest {
     CarrierFileParser carrierFileParser = new CarrierFileParser();
     ParsedResults parsedResults = carrierFileParser.parse(csvString);
     TrackingEvent expectedEvent = TrackingEvent.of("1Z999", "e1", EventType.DELIVERED, null);
-    ParsedEvent parsedEvent = new ParsedEvent("fedex", expectedEvent);
-    List<ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent);
+    List<CarrierFileRowMapper.Row.ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
     assertEquals(new ParsedResults(expectedParsedEvents, List.of()), parsedResults);
   }
 
@@ -74,10 +76,11 @@ class CarrierFileParserTest {
     ParsedResults parsedResults = carrierFileParser.parse(csvString);
     TrackingEvent expectedEvent =
         TrackingEvent.of("1Z999", "e1", EventType.DELIVERED, Instant.parse("2026-08-06T18:00:00Z"));
-    ParsedEvent parsedEvent = new ParsedEvent("fedex", expectedEvent);
-    List<ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
-    BadRow badRow =
-        new BadRow(
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent);
+    List<CarrierFileRowMapper.Row.ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
+    CarrierFileRowMapper.Row.BadRow badRow =
+        new CarrierFileRowMapper.Row.BadRow(
             3, "fedex,1Z999,e2,INTRANSIT,2026-08-06T17:00:00Z", "Invalid eventType: INTRANSIT");
     assertEquals(new ParsedResults(expectedParsedEvents, List.of(badRow)), parsedResults);
   }
@@ -96,9 +99,11 @@ fedex,1Z999,e2,
     ParsedResults parsedResults = carrierFileParser.parse(csvString);
     TrackingEvent expectedEvent =
         TrackingEvent.of("1Z999", "e1", EventType.DELIVERED, Instant.parse("2026-08-06T18:00:00Z"));
-    ParsedEvent parsedEvent = new ParsedEvent("fedex", expectedEvent);
-    List<ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
-    BadRow badRow = new BadRow(3, "fedex,1Z999,e2,", "Short line");
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent);
+    List<CarrierFileRowMapper.Row.ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
+    CarrierFileRowMapper.Row.BadRow badRow =
+        new CarrierFileRowMapper.Row.BadRow(3, "fedex,1Z999,e2,", "Short line");
     assertEquals(new ParsedResults(expectedParsedEvents, List.of(badRow)), parsedResults);
   }
 
@@ -118,14 +123,18 @@ fedex,1Z998,e2,DELIVERED,
 
     TrackingEvent expectedEvent1 =
         TrackingEvent.of("1Z999", "e1", EventType.DELIVERED, Instant.parse("2026-08-06T18:00:00Z"));
-    ParsedEvent parsedEvent1 = new ParsedEvent("fedex", expectedEvent1);
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent1 =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent1);
 
     TrackingEvent expectedEvent2 = TrackingEvent.of("1Z998", "e2", EventType.DELIVERED, null);
-    ParsedEvent parsedEvent2 = new ParsedEvent("fedex", expectedEvent2);
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent2 =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent2);
 
-    List<ParsedEvent> expectedParsedEvents = List.of(parsedEvent1, parsedEvent2);
-    BadRow badRow =
-        new BadRow(3, "fedex,1Z999,e2,IN_TRANSIT,2026-08-06 18:00:00", "Unparseable occurredAt");
+    List<CarrierFileRowMapper.Row.ParsedEvent> expectedParsedEvents =
+        List.of(parsedEvent1, parsedEvent2);
+    CarrierFileRowMapper.Row.BadRow badRow =
+        new CarrierFileRowMapper.Row.BadRow(
+            3, "fedex,1Z999,e2,IN_TRANSIT,2026-08-06 18:00:00", "Unparseable occurredAt");
     assertEquals(new ParsedResults(expectedParsedEvents, List.of(badRow)), parsedResults);
   }
 
@@ -145,12 +154,15 @@ fedex,1Z998,e2,DELIVERED,
 
     TrackingEvent expectedEvent1 =
         TrackingEvent.of("1Z999", "e1", EventType.DELIVERED, Instant.parse("2026-08-06T18:00:00Z"));
-    ParsedEvent parsedEvent1 = new ParsedEvent("fedex", expectedEvent1);
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent1 =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent1);
 
     TrackingEvent expectedEvent2 = TrackingEvent.of("1Z998", "e2", EventType.DELIVERED, null);
-    ParsedEvent parsedEvent2 = new ParsedEvent("fedex", expectedEvent2);
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent2 =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent2);
 
-    List<ParsedEvent> expectedParsedEvents = List.of(parsedEvent1, parsedEvent2);
+    List<CarrierFileRowMapper.Row.ParsedEvent> expectedParsedEvents =
+        List.of(parsedEvent1, parsedEvent2);
     assertEquals(new ParsedResults(expectedParsedEvents, List.of()), parsedResults);
   }
 
@@ -168,9 +180,10 @@ fedex,1Z998,e2,DELIVERED,
 
     TrackingEvent expectedEvent =
         TrackingEvent.of("1Z999", "e1", EventType.DELIVERED, Instant.parse("2026-08-06T18:00:00Z"));
-    ParsedEvent parsedEvent = new ParsedEvent("fedex", expectedEvent);
+    CarrierFileRowMapper.Row.ParsedEvent parsedEvent =
+        new CarrierFileRowMapper.Row.ParsedEvent("fedex", expectedEvent);
 
-    List<ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
+    List<CarrierFileRowMapper.Row.ParsedEvent> expectedParsedEvents = List.of(parsedEvent);
     assertEquals(new ParsedResults(expectedParsedEvents, List.of()), parsedResults);
   }
 }

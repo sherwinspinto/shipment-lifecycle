@@ -1,6 +1,7 @@
 package me.sspjavalabs.shipmentlifecycle.data_ingestion;
 
 import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileParser.*;
+import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper.Row.*;
 import static me.sspjavalabs.shipmentlifecycle.statemachine.engine.outgoing.port.AppendResult.*;
 
 import java.util.ArrayList;
