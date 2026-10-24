@@ -1,14 +1,17 @@
 package me.sspjavalabs.shipmentlifecycle.fileparser;
 
 import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper.*;
+import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper.RawLineHolder.*;
 import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper.Row.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import me.sspjavalabs.shipmentlifecycle.fileparser.BareMetalCSVParser.RowAccumulator.RowAccumulatorResult;
 
 public class BareMetalCSVParser {
   private static final byte COMMA_BYTE = 0x2C;
@@ -30,81 +33,91 @@ public class BareMetalCSVParser {
     ByteBuffer byteBuffer = ByteBuffer.allocate(this.bufferCapacity);
     byteBuffer.limit(0);
     byte curr;
-    int fieldLengthCount = 0;
-    int fieldNumberCount = 0;
-    int currentLineLengthCount = 0;
-    int lineNumberCount = 0;
-    String[] trackingEventArray = new String[5];
-    byte[] tmpFieldValue = new byte[128];
-    byte[] line = new byte[1024];
-    boolean flushed = false;
     int check;
     boolean inQuotes = false;
-    byte peeked;
+
+    FieldByteAccumulator fieldByteAccumulator = new FieldByteAccumulator(128);
+    RowAccumulator rowAccumulator = new RowAccumulator(1024);
+    FieldsAccumulator fieldsAccumulator = new FieldsAccumulator(5);
+    State currentState = State.FIELD;
+    ByteHolder lineHolder = new ByteHolder();
+
+    while ((check = nextByte(byteBuffer, in)) != -1) {
+      if ((byte) check == NEWLINE_BYTE) break;
+    }
+
     while ((check = nextByte(byteBuffer, in)) != -1) {
       curr = (byte) check;
-      peeked = curr == QUOTES_BYTE ? (byte) peek(byteBuffer, in) : -1;
-      if (curr == QUOTES_BYTE && curr == peeked) nextByte(byteBuffer, in);
-      if (curr == QUOTES_BYTE && inQuotes && peeked != QUOTES_BYTE) inQuotes = false;
-      else if (curr == QUOTES_BYTE) inQuotes = true;
-      if (curr != NEWLINE_BYTE || inQuotes) {
-        line[currentLineLengthCount] = curr;
-        currentLineLengthCount++;
-      }
-      if (!inQuotes && (curr == COMMA_BYTE || curr == NEWLINE_BYTE)) {
-
-        trackingEventArray[fieldNumberCount++] =
-            new String(tmpFieldValue, 0, fieldLengthCount, StandardCharsets.UTF_8);
-        flushed = true;
-        fieldLengthCount = 0;
-        if (curr == NEWLINE_BYTE) {
-          lineNumberCount++;
-          if (lineNumberCount != 1) {
-            flushRow(
-                trackingEventArray,
-                lineNumberCount,
-                line,
-                currentLineLengthCount,
-                parsedEvents,
-                badRows);
+      Token currToken = Token.getType(curr);
+      switch (currToken) {
+        case QUOTE -> {
+          if (isEscaped(currToken, in, byteBuffer, currentState)) {
+            rowAccumulator.accumulate((byte) nextByte(byteBuffer, in));
+            fieldByteAccumulator.accumulate(curr);
+          } else {
+            inQuotes = !inQuotes;
+            currentState = inQuotes ? State.QUOTED_FIELD : State.FIELD;
+            rowAccumulator.accumulate(curr);
           }
-          fieldNumberCount = 0;
-          currentLineLengthCount = 0;
         }
-      } else {
-        flushed = false;
-        if (curr != QUOTES_BYTE || peeked == QUOTES_BYTE) tmpFieldValue[fieldLengthCount++] = curr;
+        case COMMA -> {
+          switch (currentState) {
+            case FIELD -> fieldsAccumulator.add(fieldByteAccumulator.flush());
+            case QUOTED_FIELD -> fieldByteAccumulator.accumulate(curr);
+          }
+          rowAccumulator.accumulate(curr);
+        }
+        case NEWLINE -> {
+          switch (currentState) {
+            case FIELD -> {
+              fieldsAccumulator.add(fieldByteAccumulator.flush());
+              flushRow(
+                  fieldsAccumulator.flush(),
+                  rowAccumulator.flush(),
+                  parsedEvents,
+                  badRows,
+                  lineHolder);
+              fieldsAccumulator.clear();
+            }
+            case QUOTED_FIELD -> {
+              fieldByteAccumulator.accumulate(curr);
+              rowAccumulator.accumulate(curr);
+            }
+          }
+        }
+        case CHAR -> {
+          fieldByteAccumulator.accumulate(curr);
+          rowAccumulator.accumulate(curr);
+        }
       }
     }
-    if (!flushed) {
-      lineNumberCount++;
-      trackingEventArray[fieldNumberCount++] =
-          new String(tmpFieldValue, 0, fieldLengthCount, StandardCharsets.UTF_8);
+    if (!fieldsAccumulator.flushed) {
+      fieldsAccumulator.add(fieldByteAccumulator.flush());
       flushRow(
-          trackingEventArray, lineNumberCount, line, currentLineLengthCount, parsedEvents, badRows);
+          fieldsAccumulator.flush(), rowAccumulator.flush(), parsedEvents, badRows, lineHolder);
     }
 
     return new CarrierFileParser.ParsedResults(parsedEvents, badRows);
   }
 
+  boolean isEscaped(Token token, ReadableByteChannel in, ByteBuffer byteBuffer, State state)
+      throws IOException {
+    return state == State.QUOTED_FIELD
+        && token == Token.QUOTE
+        && Token.getType((byte) peek(byteBuffer, in)) == Token.QUOTE;
+  }
+
   void flushRow(
       String[] trackingEventArray,
-      int lineNumberCount,
-      byte[] line,
-      int currentLineLengthCount,
+      RowAccumulatorResult rar,
       List<ParsedEvent> parsedEvents,
-      List<BadRow> badRows) {
-    CsvLineByteArrayInfo csvLineByteArrayInfo =
-        new CsvLineByteArrayInfo(line, 0, currentLineLengthCount);
+      List<BadRow> badRows,
+      ByteHolder lineHolder) {
     Row row =
         toRow(
             trackingEventArray,
-            lineNumberCount,
-            () ->
-                new String(
-                    csvLineByteArrayInfo.bytes,
-                    csvLineByteArrayInfo.start,
-                    csvLineByteArrayInfo.end));
+            rar.rowCount,
+            lineHolder.setRawLineBytes(rar.rowBuffer).setStart(rar.start).setEnd(rar.end));
     switch (row) {
       case ParsedEvent parsedEvent -> parsedEvents.add(parsedEvent);
       case BadRow badRow -> badRows.add(badRow);
@@ -136,5 +149,116 @@ public class BareMetalCSVParser {
     return true;
   }
 
-  record CsvLineByteArrayInfo(byte[] bytes, int start, int end) {}
+  enum Token {
+    COMMA,
+    NEWLINE,
+    QUOTE,
+    CHAR;
+    private static Map<Byte, Token> tokenMap =
+        Map.of(
+            COMMA_BYTE, COMMA,
+            NEWLINE_BYTE, NEWLINE,
+            QUOTES_BYTE, QUOTE);
+
+    static Token getType(byte input) {
+      return tokenMap.getOrDefault(input, CHAR);
+    }
+  }
+
+  enum State {
+    FIELD,
+    QUOTED_FIELD
+  }
+
+  class FieldsAccumulator {
+    private final String[] fields;
+    private int fieldCount = 0;
+    private boolean flushed = false;
+
+    public FieldsAccumulator(int numberOfFields) {
+      this.fields = new String[numberOfFields];
+    }
+
+    void add(String field) {
+      fields[fieldCount++] = field;
+      flushed = false;
+    }
+
+    // TODO: if fields size less that field count then log a warning ??
+    String[] flush() {
+      fieldCount = 0;
+      flushed = true;
+      return fields;
+    }
+
+    void clear() {
+      Arrays.fill(fields, null);
+    }
+  }
+
+  class FieldByteAccumulator {
+    private final byte[] fieldBuffer;
+    private int fieldLength = 0;
+
+    FieldByteAccumulator(int bufferSize) {
+      this.fieldBuffer = new byte[bufferSize];
+    }
+
+    void accumulate(byte aByte) {
+      fieldBuffer[fieldLength++] = aByte;
+    }
+
+    String flush() {
+      String fieldValue = new String(fieldBuffer, 0, fieldLength);
+      fieldLength = 0;
+      return fieldValue;
+    }
+  }
+
+  class RowAccumulator {
+    private final byte[] rowBuffer;
+    private int rowBufferCount = 0;
+    private final RowAccumulatorResult result = new RowAccumulatorResult();
+
+    public RowAccumulator(int rowBufferLength) {
+      this.rowBuffer = new byte[rowBufferLength];
+    }
+
+    void accumulate(byte aByte) {
+      rowBuffer[rowBufferCount++] = aByte;
+    }
+
+    RowAccumulatorResult flush() {
+      result.setRowBuffer(rowBuffer).setStart(0).setEnd(rowBufferCount).increaseRowCount();
+      rowBufferCount = 0;
+      return result;
+    }
+
+    class RowAccumulatorResult {
+      private byte[] rowBuffer;
+      private int start;
+      private int end;
+      private int rowCount = 1;
+
+      RowAccumulatorResult setRowBuffer(final byte[] rowBuffer) {
+        this.rowBuffer = rowBuffer;
+        return this;
+      }
+
+      RowAccumulatorResult setStart(int start) {
+        this.start = start;
+        return this;
+      }
+
+      RowAccumulatorResult setEnd(int end) {
+        this.end = end;
+        return this;
+      }
+
+      RowAccumulatorResult increaseRowCount() {
+        rowCount++;
+        return this;
+      }
+    }
+  }
 }

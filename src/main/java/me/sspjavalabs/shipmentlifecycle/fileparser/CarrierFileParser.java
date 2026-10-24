@@ -1,6 +1,7 @@
 package me.sspjavalabs.shipmentlifecycle.fileparser;
 
 import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper.*;
+import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper.RawLineHolder.*;
 import static me.sspjavalabs.shipmentlifecycle.fileparser.CarrierFileRowMapper.Row.*;
 
 import java.util.ArrayList;
@@ -27,8 +28,7 @@ public class CarrierFileParser {
       if (lines[i].isBlank()) continue;
 
       String[] values = lines[i].split(",", -1);
-      final String rawLine = lines[i];
-      Row row = toRow(values, i + 1, () -> rawLine);
+      Row row = toRow(values, i + 1, new StringHolder(lines[i]));
 
       switch (row) {
         case ParsedEvent parsedEvent -> parsedEvents.add(parsedEvent);
